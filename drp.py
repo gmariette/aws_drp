@@ -157,6 +157,17 @@ class DRP:
             aws_session_token=SESSION_TOKEN
         ).client('autoscaling')
 
+    def describeAZ(self):
+        '''
+        DOCSTRING: Return the AZ list for a region
+        INPUT: None
+        OUTPUT: AZ list
+        '''
+        # Client init
+        client = self.initec2client("DescribeAZ")
+        response = client.describe_availability_zones()['AvailabilityZones']
+        return [ x['ZoneName'] for x in response ]
+
     def describeInstances(self, az=None):
         '''
         DOCSTRING: List instances running in an AZ
@@ -473,7 +484,7 @@ class DRP:
 
 if __name__ == "__main__":
     c = DRP("MY_ACCOUNT")
-    for az in c.az_list:
+    for az in c.describeAZ():
         main_logger = logging.getLogger('MAIN')
         main_logger.info('Begin of the operations on az: %s', az)
 
