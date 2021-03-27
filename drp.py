@@ -42,11 +42,8 @@ class DRP:
         self.aws_accounts = {
             "MY_ACCOUNT": { "id": "xxxx", "role": "iam-role-name", "region": "eu-west-3" }
         }
-        self.azs = {
-            "eu-west-3": ["eu-west-3a","eu-west-3b","eu-west-3c"]
         self.env = env
         self.logger = logging.getLogger('DRP')
-        self.az_list = self.azs[self.aws_accounts[env]["region"]]
         self.asg_backup = {}
         self.nacl_backup = {}
         self.df = pd.DataFrame()
@@ -149,7 +146,7 @@ class DRP:
         OUTPUT: boto3.client('autoscaling')
         '''
         ACCESS_KEY, SECRET_KEY, SESSION_TOKEN = self.assumeRole(action)
-        self.logger.debug('Launching rds client with role %s on the account %s', self.aws_accounts[self.env]["role"], self.aws_accounts[self.env]["id"])
+        self.logger.debug('Launching asg client with role %s on the account %s', self.aws_accounts[self.env]["role"], self.aws_accounts[self.env]["id"])
         return boto3.Session(
             region_name=self.aws_accounts[self.env]["region"],
             aws_access_key_id=ACCESS_KEY,
@@ -262,7 +259,7 @@ class DRP:
         OUTPUT: None
         '''
         # Client init
-        client = self.initeASGClient("Update")
+        client = self.initeASGClient("UpdateASG")
         self.logger.info('Modifying ASG %s - Setting new AZs: %s', asg, azs)
         response = client.update_auto_scaling_group(
             AutoScalingGroupName=asg,
@@ -292,11 +289,6 @@ class DRP:
             ]
         )['Subnets']
         for item in response:
-            db_subnet = False
-            # for tag in item['Tags']:
-            #     if 'database' in tag['Value']:
-            #         db_subnet = True
-            # if not db_subnet:
             subnet_list.append(item['SubnetId'])
         return subnet_list
 
@@ -493,7 +485,7 @@ if __name__ == "__main__":
 
         # 0) Create a new az_list without our AZ
 
-        remaining_az = [ x for x in c.az_list if x != az]
+        remaining_az = [ x for x in c.describeAZ() if x != az]
 
         # 1) Identify the subnets from the az
 
@@ -595,8 +587,8 @@ if __name__ == "__main__":
         c.restoreASGConfig()
         c.addActionToDf("[{} / {}] Restore ASGs configs".format(c.env, az))
         c.dumpDfToDisk()
-        break
 
 
-# Dump the DF thing
-c.graphPlots()
+
+    # Dump the DF thing
+    c.graphPlots()
